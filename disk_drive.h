@@ -11,7 +11,7 @@ class DiskDrive {
 public:
   DiskDrive();
   DriveStatus* getStatus();
-  boolean setImageFile(SdFile* file);
+  boolean setImageFile(SdFile* file, const char *filename);
   unsigned long getImageSectorSize();
   SectorDataInfo* getSectorData(unsigned long sector, byte *data);
   unsigned long writeSectorData(unsigned long sector, byte* data, unsigned long len);

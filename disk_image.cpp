@@ -3,23 +3,26 @@
  *
  * Copyright (c) 2012 Whizzo Software LLC (Daniel Noguerol)
  *
+ * Changes related to SD library are
+ * Copyright (c) 2020 Jeffrey Armstrong <jeff@rainbow-100.com>
+ *
  * This file is part of the SIO2Arduino project which emulates
  * Atari 8-bit SIO devices on Arduino hardware.
  *
- * SIO2Arduino is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SIO2Arduino is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SIO2Arduino; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "disk_image.h"
 #include "config.h"
 
@@ -49,12 +52,12 @@ DiskImage::DiskImage() {
   m_fileRef = NULL;
 }
 
-boolean DiskImage::setFile(SdFile* file) {
+boolean DiskImage::setFile(SdFile* file, const char *filename) {
   m_fileRef = file;
   m_fileSize = file->fileSize();
 
   // if image is valid...
-  if (loadFile(file)) {
+  if (loadFile(file, filename)) {
     return true;
   } else {
     m_fileRef = NULL;
@@ -230,8 +233,10 @@ boolean DiskImage::format(SdFile *file, int density) {
   return false;
 }
 
-boolean DiskImage::loadFile(SdFile *file) {
-  char filename[13];
+boolean DiskImage::loadFile(SdFile *file, const char *filename) {
+//  char filename[13];
+
+  LOG_MSG_CR("handling file");
   
   // make sure we're at the beginning of file
   file->seekSet(0);
@@ -240,11 +245,17 @@ boolean DiskImage::loadFile(SdFile *file) {
   byte header[16];
   for (int i=0; i < 16; i++) {
     header[i] = (byte)file->read();
+    LOG_MSG_CR(header[i]);
   }
   file->seekSet(0);
+
+  LOG_MSG_CR("rewind after 16");
   
   // check if it's an ATR
   ATRHeader* atrHeader = (ATRHeader*)&header;
+
+  LOG_MSG_CR(atrHeader->signature);
+   
   if (atrHeader->signature == ATR_SIGNATURE) {
     m_type = TYPE_ATR;
     m_headerSize = 16;
@@ -388,7 +399,6 @@ boolean DiskImage::loadFile(SdFile *file) {
   }  
 #endif
 
-  file->getName((char*)&filename, 13);
   int len = strlen(filename);
   char *extension = filename + len - 4;
 

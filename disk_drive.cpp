@@ -3,23 +3,26 @@
  *
  * Copyright (c) 2012 Whizzo Software LLC (Daniel Noguerol)
  *
+ * Changes related to SD library are
+ * Copyright (c) 2020 Jeffrey Armstrong <jeff@rainbow-100.com>
+ *
  * This file is part of the SIO2Arduino project which emulates
  * Atari 8-bit SIO devices on Arduino hardware.
  *
- * SIO2Arduino is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SIO2Arduino is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SIO2Arduino; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "disk_drive.h"
 
 DiskDrive::DiskDrive() {
@@ -35,8 +38,8 @@ DriveStatus* DiskDrive::getStatus() {
   return &m_driveStatus;
 }
 
-boolean DiskDrive::setImageFile(SdFile *file) {
-  boolean result = m_diskImage.setFile(file);
+boolean DiskDrive::setImageFile(SdFile *file, const char *filename) {
+  boolean result = m_diskImage.setFile(file, filename);
   if (result) {
     // set device status
     memset(&m_driveStatus.statusFrame, 0, sizeof(m_driveStatus.statusFrame));
@@ -44,7 +47,9 @@ boolean DiskDrive::setImageFile(SdFile *file) {
     m_driveStatus.statusFrame.commandStatus.doubleDensity = m_diskImage.isDoubleDensity() ? 0x01 : 0x00;
     m_driveStatus.statusFrame.hardwareStatus.writeProtect = m_diskImage.isReadOnly() ? 0x00 : 0x01;
     m_driveStatus.sectorSize = m_diskImage.getSectorSize();
-  }
+    LOG_MSG_CR("mount ok");
+  } else
+    LOG_MSG_CR("mount failed");
   return result;
 }
 

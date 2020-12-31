@@ -2,7 +2,7 @@
 #define DISK_IMAGE_h
 
 #include <Arduino.h>
-#include <SdFat.h>
+#include <SD.h>
 #include "atari.h"
 #include "config.h"
 
@@ -89,7 +89,7 @@ struct PROSectorHeader {
 class DiskImage {
 public:
   DiskImage();
-  boolean setFile(SdFile* file);
+  boolean setFile(SdFile* file, const char *filename);
   byte getType();
   unsigned long getSectorSize();
   SectorDataInfo* getSectorData(unsigned long sector, byte* data);
@@ -101,7 +101,7 @@ public:
   boolean hasImage();
   boolean hasCopyProtection();
 private:
-  boolean loadFile(SdFile* file);
+  boolean loadFile(SdFile* file, const char *filename);
   SdFile*          m_fileRef;
   byte             m_type;
   unsigned long    m_fileSize;

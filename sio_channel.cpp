@@ -3,23 +3,26 @@
  *
  * Copyright (c) 2012 Whizzo Software LLC (Daniel Noguerol)
  *
+ * Changes related to SD library and extendable device ID support are
+ * Copyright (c) 2020 Jeffrey Armstrong <jeff@rainbow-100.com>
+ *
  * This file is part of the SIO2Arduino project which emulates
  * Atari 8-bit SIO devices on Arduino hardware.
  *
- * SIO2Arduino is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SIO2Arduino is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SIO2Arduino; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "sio_channel.h"
 #include "config.h"
 
@@ -152,6 +155,7 @@ boolean SIOChannel::isChecksumValid() {
 boolean SIOChannel::isCommandForThisDevice() {
   // we only emulate drive 1 right now
   return (m_cmdFrame.deviceId == DEVICE_D1 || m_cmdFrame.deviceId == DEVICE_SDRIVE);
+  //(m_cmdFrame.deviceId == DEVICE_D1 ||m_cmdFrame.deviceId == DEVICE_D2 ||m_cmdFrame.deviceId == DEVICE_D3 ||m_cmdFrame.deviceId == DEVICE_D4 || m_cmdFrame.deviceId == DEVICE_SDRIVE);
 }
 
 boolean SIOChannel::isValidCommand() {
@@ -202,7 +206,9 @@ byte SIOChannel::checksum(byte* chunk, int length) {
 byte SIOChannel::processCommand() {
   int deviceId = 1;
   byte nextCmdPinState = STATE_WAIT_CMD_END;
-  
+
+  deviceId = m_cmdFrame.deviceId - DEVICE_D1 + 1;
+    
   switch (m_cmdFrame.command) {
     case CMD_READ:
       cmdGetSector(deviceId);
@@ -282,7 +288,7 @@ void SIOChannel::cmdPutSector(int deviceId) {
   
 void SIOChannel::doPutSector() {
   int sectorSize = m_putSectorBufferPtr - m_sectorBuffer - 1;
-
+  int deviceId = m_cmdFrame.deviceId - DEVICE_D1 + 1;
   // calculate checksum
   byte chksum = checksum(m_sectorBuffer, sectorSize);
 
@@ -294,7 +300,7 @@ void SIOChannel::doPutSector() {
 
     // write sector to disk image
     delay(DELAY_T5);
-    if (m_driveAccess->writeSectorFunc(1, getCommandSector(), m_sectorBuffer, sectorSize)) {
+    if (m_driveAccess->writeSectorFunc(deviceId, getCommandSector(), m_sectorBuffer, sectorSize)) {
       // send COMPLETE
       m_stream->write(COMPLETE);
     } else {

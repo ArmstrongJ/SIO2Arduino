@@ -3,25 +3,28 @@
  *
  * Copyright (c) 2012 Whizzo Software LLC (Daniel Noguerol)
  *
+ * Changes related to SD library are
+ * Copyright (c) 2020 Jeffrey Armstrong <jeff@rainbow-100.com>
+ *
  * This file is part of the SIO2Arduino project which emulates
  * Atari 8-bit SIO devices on Arduino hardware.
  *
- * SIO2Arduino is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SIO2Arduino is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SIO2Arduino; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "config.h"
-#include <SdFat.h>
+#include <SD.h>
 #include "atari.h"
 #include "sio_channel.h"
 #include "disk_drive.h"
@@ -47,6 +50,7 @@ DriveAccess driveAccess(getDeviceStatus, readSector, writeSector, format);
 DriveControl driveControl(getFileList, mountFileIndex, changeDirectory);
 SIOChannel sioChannel(PIN_ATARI_CMD, &SIO_UART, &driveAccess, &driveControl);
 Sd2Card card;
+SdVolume volume;
 SdFile currDir;
 SdFile file; // TODO: make this unnecessary
 DiskDrive drive1;
@@ -88,18 +92,27 @@ void setup() {
 
   // initialize SD card
   LOG_MSG(F("Initializing SD card..."));
-  pinMode(PIN_SD_CS, OUTPUT);
+  pinMode(10, OUTPUT);
 
-  if (!card.begin(PIN_SD_CS, SD_SCK_MHZ(50))) {
-    LOG_MSG_CR(F(" failed."));
+  //if (!card.begin(PIN_SD_CS, SD_SCK_MHZ(50))) {
+    if (!card.init(SPI_HALF_SPEED, 4)) {
+    LOG_MSG_CR(F(" failed SPI."));
     #ifdef LCD_DISPLAY
       lcd.print(F("SD Init Error"));
     #endif     
     return;
   }
+
+  if (!volume.init(card)) {
+      LOG_MSG_CR(F(" failed volume."));
+    #ifdef LCD_DISPLAY
+      lcd.print(F("SD Root Error"));
+    #endif     
+    return;
+  }
   
-  if (!currDir.open("/")) {
-    LOG_MSG_CR(F(" failed."));
+  if (!currDir.openRoot(volume)) {
+    LOG_MSG_CR(F(" failed open root."));
     #ifdef LCD_DISPLAY
       lcd.print(F("SD Root Error"));
     #endif     
@@ -111,7 +124,10 @@ void setup() {
     lcd.print(F("READY"));
     delay(3000);
   #endif
-  mountFilename(0, "AUTORUN.ATR");
+  //mountFilename(0, "AUTORUN.ATR");
+  mountFilename(1, "AUTORUN.ATR");
+  //mountFilename(1, "MYDOS.ATR");
+  //mountFilename(2, "ULTIMA1.ATR");
 }
 
 void loop() {
@@ -164,13 +180,13 @@ boolean format(int deviceId, int density) {
   char name[13];
   
   // get current filename
-  file.getName(name, 13);
+  //file.getName(name, 13);
 
   // close and delete the current file
   file.close();
-  file.remove();
+  //file.remove();
 
-  LOG_MSG(F("Remove old file: "));
+  //LOG_MSG(F("Remove old file: "));
   LOG_MSG_CR(name);
 
   // open new file for writing
@@ -182,7 +198,7 @@ boolean format(int deviceId, int density) {
   // allow the virtual drive to format the image (and possibly alter its size)
   if (drive1.formatImage(&file, density)) {
     // set the new image file for the drive
-    drive1.setImageFile(&file);
+    drive1.setImageFile(&file, name);
     return true;
   } else {
     return false;
@@ -297,7 +313,7 @@ void changeDirectory(int ix) {
       currDir = subDir;
     }
   } else {
-    if (subDir.open("/")) {
+    if (subDir.openRoot(volume)) {
       currDir = subDir;
     }
   }
@@ -334,17 +350,28 @@ boolean mountFilename(int deviceId, char *name) {
   if (file.isOpen()) {
     file.close();
   }
-  
-  if (file.open(&currDir, name, O_RDWR | O_SYNC) && drive1.setImageFile(&file)) {
-    LOG_MSG_CR(name);
 
-    #ifdef LCD_DISPLAY
-    lcd.clear();
-    lcd.print(name);
-    lcd.setCursor(0,1);
-    #endif
+  LOG_MSG("attempting mount: ");
+  LOG_MSG_CR(name);
 
-    return true;
+  if (file.open(&currDir, name, O_RDWR | O_SYNC)) {
+    LOG_MSG_CR("file opened...");
+    LOG_MSG_CR(file.read());
+    LOG_MSG_CR(file.read());
+    LOG_MSG_CR(file.read());
+    LOG_MSG_CR(file.read());
+    if (drive1.setImageFile(&file, name)) {
+      LOG_MSG_CR("image set");
+      LOG_MSG_CR(name);
+
+      #ifdef LCD_DISPLAY
+      lcd.clear();
+      lcd.print(name);
+      lcd.setCursor(0,1);
+      #endif
+
+      return true;
+    }
   }
   
   return false;

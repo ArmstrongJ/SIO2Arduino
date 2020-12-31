@@ -3,23 +3,26 @@
  *
  * Copyright (c) 2012 Whizzo Software LLC (Daniel Noguerol)
  *
+ * Changes related to SD library are
+ * Copyright (c) 2020 Jeffrey Armstrong <jeff@rainbow-100.com>
+ *
  * This file is part of the SIO2Arduino project which emulates
  * Atari 8-bit SIO devices on Arduino hardware.
  *
- * SIO2Arduino is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SIO2Arduino is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SIO2Arduino; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -39,7 +42,7 @@
 //#define LCD_DISPLAY
 
 // Uncomment this line if you are using a hardware button for image selection
-#define SELECTOR_BUTTON
+//#define SELECTOR_BUTTON
 
 // Uncomment this line if you want a reset button (automatically mounts /AUTORUN.ATR) (deprecated, AUTORUN.ATR always mounted if it exists)
 //#define RESET_BUTTON
@@ -54,7 +57,7 @@
 //#define ATX_IMAGES
 
 // uncomment for XEX "image" support
-#define XEX_IMAGES
+//#define XEX_IMAGES
 
 // uncomment this to enable debug logging -- make sure the HARDWARE_UART isn't the same as
 // the LOGGING_UART defined at the bottom of the file
